@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Información</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Únete al voluntariado y sé parte de La Barana.">
+</head>
+<body>
+
+<header>
+    <h1>Accede a tu información</h1>
+</header>
+
+<p>Debes elegir una de las tres opciones<br><br>
+    Si quieres <strong>buscar</strong> debes introducir <strong>nombre</strong> y el programa te devuelve todas las personas guardadas con ese nombre<br>
+    Si quieres <strong>editar el mail</strong> debes incluir <strong>nombre y apellidos</strong> e introducir el <strong>nuevo email</strong><br>
+    Si quieres <strong>borrar</strong> debes introducir tu <strong>nombre, apellidos y mail</strong><br>
+    <strong>ATENCIÓN: los datos introducidos se eliminarán cada 20 minutos</strong> <br>
+</p>
+
+<form id="formulario-voluntariado">
+    <h2>Elige la acción que quieres hacer</h2>
+
+    <label>
+        <input type="radio" name="opcion" value="buscar" required>
+        Buscar
+    </label>
+
+    <label>
+        <input type="radio" name="opcion" value="editar">
+        Editar
+    </label>
+
+    <label>
+        <input type="radio" name="opcion" value="borrar">
+        Borrar
+    </label><br><br>
+
+    <label>Introduce tus datos</label> <br>
+    <input type="text" id="nombre" placeholder="Nombre" required>
+    <input type="text" id="apellidos" placeholder="Apellidos">
+    <input type="email" id="email" placeholder="Email"> <br><br>
+
+    <button type="submit">Enviar</button>
+</form>
+
+<div id="resultados"></div>
+
+<script>
+    document.getElementById("formulario-voluntariado").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const opcion = document.querySelector('input[name="opcion"]:checked').value;
+        const nombre = document.getElementById("nombre").value.trim().toLowerCase();
+        const apellidos = document.getElementById("apellidos").value.trim().toLowerCase();
+        const email = document.getElementById("email").value.trim().toLowerCase();
+        const resultadosDiv = document.getElementById("resultados");
+        const urlBase = "http://localhost:8080/api/personas";
+        const usuario = "usuario";
+        const clave = "clave";
+        const authHeader = "Basic " + btoa(usuario + ":" + clave); //lo necesitamos para la autenticación (idea de ChatGPT)
+
+        resultadosDiv.innerHTML = ""; // Limpiar resultados anteriores
+
+        if (opcion === "buscar") {
+            if (!nombre) {
+                alert("Por favor, introduce un nombre para buscar.");
+                return;
+            }
+
+            fetch(`${urlBase}/${encodeURIComponent(nombre)}`, {
+                method: "GET",
+                headers: {
+                    "Authorization": authHeader
+                }
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error("Error al buscar");
+                    return res.json();
+                })
+                .then(data => {
+                    resultadosDiv.innerHTML = "<h2>Resultados encontrados:</h2>";
+                    if (!data || data.length === 0) {
+                        resultadosDiv.innerHTML += "<p>No se encontró ninguna coincidencia.</p>";
+                    } else {
+                        const lista = document.createElement("ul");
+                        data.forEach(p => {
+                            const item = document.createElement("li");
+                            item.textContent = `Nombre: ${p.nombre}, Apellidos: ${p.apellidos}, Email: ${p.email}`;
+                            lista.appendChild(item);
+                        });
+                        resultadosDiv.appendChild(lista);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al buscar:", error);
+                    resultadosDiv.innerHTML = "<p style='color:red;'>Hubo un error al buscar la información.</p>";
+                });
+
+        } else if (opcion === "editar") {
+            if (!nombre || !apellidos || !email) {
+                alert("Para editar, introduce nombre, apellidos y el nuevo email.");
+                return;
+            }
+
+            const nuevosDatos = { nombre, apellidos, email };
+
+            fetch(`${urlBase}/editar`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader
+                },
+                body: JSON.stringify(nuevosDatos)
+            })
+                .then(res => {
+                    if (res.status === 404) {
+                        alert("No se encontró ninguna persona con ese nombre y apellidos.");
+                        throw new Error("No encontrada");
+                    }
+                    if (!res.ok) throw new Error("Error al editar");
+                    return res.json();
+                })
+                .then(data => {
+                    alert(`Email actualizado:\nNombre: ${data.nombre}\nApellidos: ${data.apellidos}\nNuevo Email: ${data.email}`);
+                })
+                .catch(error => {
+                    console.error("Error al editar:", error);
+                    if (error.message !== "No encontrada") {
+                        alert("No se pudo editar la persona.");
+                    }
+                });
+
+        } else if (opcion === "borrar") {
+            if (!nombre || !apellidos || !email) {
+                alert("Para borrar, debes completar nombre, apellidos y mail.");
+                return;
+            }
+
+            const datosBorrar = { nombre, apellidos, email };
+
+            fetch(`${urlBase}/eliminar`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": authHeader
+                },
+                body: JSON.stringify(datosBorrar)
+            })
+                .then(res => {
+                    if (res.status === 204) {
+                        alert("Persona eliminada correctamente.");
+                    } else {
+                        throw new Error("No se pudo eliminar");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al borrar:", error);
+                    alert("No se pudo borrar la persona.");
+                });
+
+        } else {
+            alert("Selecciona una opción válida.");
+        }
+    });
+</script>
+
+</body>
+</html>

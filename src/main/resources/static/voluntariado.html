@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Voluntariado</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Únete al voluntariado y sé parte de La Barana.">
+</head>
+<body>
+
+<header>
+    <h1>¡Quiero ser voluntari@!</h1>
+</header>
+
+<!-- 📌 Imagen centrada -->
+<div class="imagen-contenedor">
+    <img src="circulo.jpg" alt="Imagen representativa" class="imagen-centrada">
+</div>
+
+<nav>
+    <ul>
+        <li><a href="#formulario">Formulario</a></li>
+        <li><a href="#ubicacion">Ubicación</a></li>
+    </ul>
+</nav>
+
+<main>
+    <section id="voluntariado">
+        <p class="destacado">
+            Formar parte de algo más grande que, a su vez, es más familiar. ¿Por qué no?
+        </p>
+    </section>
+
+    <article>
+        <section id="formulario">
+            <h2 class="titulo-formulario">Formulario para ser voluntario</h2>
+
+            <form id="formulario-voluntariado" class="formulario">
+                <fieldset>
+                    <legend>Datos personales</legend>
+
+                    <p>
+                        <label for="fname">Nombre:</label>
+                        <input type="text" id="fname" name="fname" required>
+                    </p>
+
+                    <p>
+                        <label for="lname">Apellidos:</label>
+                        <input type="text" id="lname" name="lname" required>
+                    </p>
+
+                    <p>
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </p>
+                </fieldset>
+
+                <button type="submit" class="boton-formulario">Enviar</button> <br> <br>
+
+            </form>
+            <a href="informacion.html" class="boton-formulario">Accede a tu información</a>
+
+        </section>
+
+        <aside>
+            <h3>¿Dónde estamos?</h3>
+            <figure>
+                <h3 id="ubicacion">Ven a visitarnos</h3>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58578.51781783556!2d0.47999760500637323!3d42.55006872025138!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12a879cfbdff4617%3A0x6af7c04e3534d5da!2sCentro%20Ecuestre%20La%20Barana!5e1!3m2!1ses!2ses!4v1738573657761!5m2!1ses!2ses"
+                        width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy">
+                </iframe>
+            </figure>
+        </aside>
+    </article>
+
+</main>
+
+<footer>
+    <a id="contacto" href="https://api.whatsapp.com/send?phone=34659477997" class="whatsapp-boton">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Logo">
+        Escríbenos por WhatsApp
+    </a>
+</footer>
+
+
+<script>
+    document.getElementById("formulario-voluntariado").addEventListener("submit", function(event) {
+        event.preventDefault(); // evitar que se recargue la página
+
+        // Recoger datos del formulario (sin pasar a minúsculas)
+        const nombre = document.getElementById("fname").value.trim();
+        const apellidos = document.getElementById("lname").value.trim();
+        const email = document.getElementById("email").value.trim();
+
+        const datos = {
+            nombre: nombre,
+            apellidos: apellidos,
+            email: email
+        };
+
+        // Enviar con fetch
+        fetch("http://localhost:8080/api/personas", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        })
+            .then(async res => {
+                if (res.ok) {
+                    const data = await res.json();
+                    alert("Formulario enviado con éxito:\n" + JSON.stringify(data, null, 2));
+                    console.log("Respuesta del servidor:", data);
+                } else if (res.status === 409) {
+                    const mensaje = await res.text();
+                    alert("Ya estás registrad@: " + mensaje);
+                } else if (res.status === 400) {
+                    const error = await res.text();
+                    alert("Error en los datos enviados:\n" + error);
+                } else {
+                    alert("Ocurrió un error inesperado. Código: " + res.status);
+                }
+            })
+            .catch(error => {
+                console.error("Error de red o servidor:", error);
+                alert("Error al conectar con el servidor. Revisa tu conexión o vuelve a intentarlo más tarde.");
+            });
+    });
+</script>
+
+</body>
+</html>
